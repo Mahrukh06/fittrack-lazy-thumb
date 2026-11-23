@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FitThumb — Lazy Fitness Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 900px;
+    background: #111;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    border: 8px solid #222;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 12px;
+    color: #aaa;
+  }
+  .screen {
+    height: calc(100% - 44px - 80px);
+    overflow-y: auto;
+    padding: 20px;
+    padding-bottom: 100px;
+  }
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: 10px;
+  }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .nav-btn.active { color: #00ff88; }
+  .big-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #00ff88, #00cc6a);
+    color: #000;
+    border: none;
+    border-radius: 20px;
+    padding: 24px;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 12px 0;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0,255,136,0.3);
+    transition: transform 0.1s;
+  }
+  .big-btn:active { transform: scale(0.97); }
+  .big-btn.secondary {
+    background: #222;
+    color: #fff;
+    box-shadow: none;
+  }
+  .card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .progress-bar {
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00ccff);
+    width: 0%;
+    transition: width 0.4s;
+  }
+  .streak {
+    font-size: 48px;
+    font-weight: 800;
+    color: #00ff88;
+    text-align: center;
+  }
+  .set-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #222;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin: 8px 0;
+  }
+  .set-row .big-plus {
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background: #00ff88;
+    color: #000;
+    font-size: 32px;
+    border: none;
+    font-weight: bold;
+  }
+  .reward-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #00ff88;
+    color: #000;
+    padding: 24px 32px;
+    border-radius: 20px;
+    font-size: 24px;
+    font-weight: 800;
+    z-index: 100;
+    animation: pop 0.5s ease;
+    display: none;
+  }
+  @keyframes pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    70% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+  .hidden { display: none; }
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  h2 { font-size: 20px; margin: 16px 0 8px; }
+  .muted { color: #888; font-size: 14px; }
+  .photo-preview {
+    width: 100%;
+    height: 200px;
+    background: #222;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 12px 0;
+    border: 2px dashed #444;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>FitThumb</span>
+    <span>100%</span>
+  </div>
+
+  <!-- HOME -->
+  <div id="home" class="screen">
+    <div style="text-align:center; margin-bottom:20px;">
+      <div class="streak" id="streak">7</div>
+      <div class="muted">day streak</div>
+    </div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between;">
+        <span>Protein today</span>
+        <span id="protein-text">42 / 180g</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="protein-bar" style="width:23%"></div></div>
+    </div>
+    <button class="big-btn" onclick="showScreen('meal')">📷 Log Meal (1 Photo)</button>
+    <button class="big-btn" onclick="showScreen('workout')">🏋️ Log Workout (1 Tap Sets)</button>
+    <button class="big-btn secondary" onclick="showScreen('weight')">⚖️ Log Weight</button>
+    <div class="card" style="margin-top:20px;">
+      <div class="muted">Next action</div>
+      <div style="font-size:18px; margin-top:4px;">Bench Press — Set 3 of 4</div>
+      <div class="muted">Last: 185 lbs × 8</div>
+    </div>
+  </div>
+
+  <!-- MEAL -->
+  <div id="meal" class="screen hidden">
+    <h1>Log Meal</h1>
+    <div class="muted">One photo. AI estimates protein. Done.</div>
+    <div class="photo-preview" onclick="simulatePhoto()">
+      <div id="photo-placeholder">Tap to snap photo<br>(demo)</div>
+    </div>
+    <div id="meal-result" class="hidden">
+      <div class="card">
+        <div style="font-size:18px; font-weight:600;">Chicken rice bowl</div>
+        <div style="font-size:32px; color:#00ff88; margin:8px 0;">+48g protein</div>
+        <div class="muted">Confidence: high • Adjust if needed</div>
+      </div>
+      <button class="big-btn" onclick="logProtein(48)">Confirm +48g</button>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div id="workout" class="screen hidden">
+    <h1>Bench Press</h1>
+    <div class="muted">Last session: 185 × 8, 8, 7</div>
+    <div id="sets">
+      <div class="set-row">
+        <div>
+          <div style="font-weight:600;">Set 1</div>
+          <div class="muted">185 lbs × 8</div>
+        </div>
+        <button class="big-plus" onclick="completeSet(this)">✓</button>
+      </div>
+      <div class="set-row">
+        <div>
+          <div style="font-weight:600;">Set 2</div>
+          <div class="muted">185 lbs × 8</div>
+        </div>
+        <button class="big-plus" onclick="completeSet(this)">✓</button>
+      </div>
+      <div class="set-row">
+        <div>
+          <div style="font-weight:600;">Set 3</div>
+          <div class="muted">185 lbs × 8</div>
+        </div>
+        <button class="big-plus" onclick="completeSet(this)">✓</button>
+      </div>
+    </div>
+    <button class="big-btn secondary" onclick="addSet()">+ Add set</button>
+  </div>
+
+  <!-- WEIGHT -->
+  <div id="weight" class="screen hidden">
+    <h1>Body Weight</h1>
+    <div style="text-align:center; margin:40px 0;">
+      <div style="font-size:64px; font-weight:800;" id="weight-display">185.2</div>
+      <div class="muted">lbs</div>
+    </div>
+    <button class="big-btn" onclick="logWeight()">Log today's weight</button>
+    <div class="card">
+      <div class="muted">Trend (last 30 days)</div>
+      <div style="height:80px; background:#222; border-radius:8px; margin-top:8px; display:flex; align-items:end; justify-content:space-around; padding:8px;">
+        <div style="width:8px; height:40%; background:#00ff88; border-radius:4px;"></div>
+        <div style="width:8px; height:50%; background:#00ff88; border-radius:4px;"></div>
+        <div style="width:8px; height:45%; background:#00ff88; border-radius:4px;"></div>
+        <div style="width:8px; height:60%; background:#00ff88; border-radius:4px;"></div>
+        <div style="width:8px; height:55%; background:#00ff88; border-radius:4px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reward-popup" id="reward">🔥 +1 Streak!</div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('home')">🏠<br>Home</button>
+    <button class="nav-btn" onclick="showScreen('meal')">🍽️<br>Meal</button>
+    <button class="nav-btn" onclick="showScreen('workout')">💪<br>Lift</button>
+    <button class="nav-btn" onclick="showScreen('weight')">⚖️<br>Weight</button>
+  </div>
+</div>
+
+<script>
+let protein = 42;
+const target = 180;
+let streak = 7;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  event.target.closest('.nav-btn')?.classList.add('active');
+}
+
+function simulatePhoto() {
+  document.getElementById('photo-placeholder').innerHTML = '📸 Analyzing...';
+  setTimeout(() => {
+    document.getElementById('photo-placeholder').innerHTML = 'Chicken rice bowl detected';
+    document.getElementById('meal-result').classList.remove('hidden');
+  }, 1200);
+}
+
+function logProtein(g) {
+  protein += g;
+  if (protein > target) protein = target;
+  document.getElementById('protein-text').textContent = `${protein} / ${target}g`;
+  document.getElementById('protein-bar').style.width = `${(protein/target)*100}%`;
+  showReward(g >= 40 ? '💪 Protein hit!' : 'Nice!');
+  setTimeout(() => showScreen('home'), 1500);
+}
+
+function completeSet(btn) {
+  btn.textContent = '✓';
+  btn.style.background = '#00cc6a';
+  btn.disabled = true;
+  showReward(['🔥 Crushing it!', 'PR incoming?', 'Beast mode'][Math.floor(Math.random()*3)]);
+}
+
+function addSet() {
+  const sets = document.getElementById('sets');
+  const n = sets.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'set-row';
+  div.innerHTML = `<div><div style="font-weight:600;">Set ${n}</div><div class="muted">185 lbs × 8</div></div><button class="big-plus" onclick="completeSet(this)">✓</button>`;
+  sets.appendChild(div);
+}
+
+function logWeight() {
+  showReward('Logged 185.2 lbs');
+  setTimeout(() => showScreen('home'), 1200);
+}
+
+function showReward(text) {
+  const el = document.getElementById('reward');
+  el.textContent = text;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 1400);
+  if (Math.random() > 0.6) {
+    setTimeout(() => {
+      el.textContent = '🎰 Bonus XP!';
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 1000);
+    }, 1600);
+  }
+}
+</script>
+</body>
+</html>
